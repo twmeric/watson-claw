@@ -4,9 +4,9 @@
  */
 
 import { parseUserIntent } from '../services/llm.js';
-import { createReminder, getUserReminders } from '../services/db.js';
+import { createReminder, getUserReminders, getOrCreateUser } from '../services/db.js';
 import { sendWhatsAppMessage } from '../services/whatsapp.js';
-import { validateSecurityCode, getOrCreateUser } from '../utils/security.js';
+import { validateSecurityCode } from '../utils/security.js';
 
 /**
  * Handle SaleSmartly webhook
