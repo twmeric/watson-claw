@@ -4,9 +4,10 @@
  */
 
 import { parseUserIntent } from '../services/llm.js';
-import { createReminder, getUserReminders, getOrCreateUser } from '../services/db.js';
+import { getOrCreateUser, createReminder, getUserReminders, cancelReminder, updateUserLastActive } from '../services/db.js';
 import { sendWhatsAppMessage } from '../services/whatsapp.js';
 import { validateSecurityCode } from '../utils/security.js';
+import { parseTimeExpression, extractTaskContent, formatDateTime, calculateReminderTime, isHelpRequest, isGreeting, isListRequest, isCancelRequest } from '../utils/parser.js';
 
 /**
  * Handle SaleSmartly webhook
@@ -25,7 +26,7 @@ export async function handleWebhook(request, env, corsHeaders) {
     
     // Extract message data
     const message = extractMessageData(data);
-    if (!message) {
+    if (!message || !message.phone || !message.text) {
       return jsonResponse({ status: 'ignored', reason: 'no_message' }, 200, corsHeaders);
     }
     
@@ -34,12 +35,11 @@ export async function handleWebhook(request, env, corsHeaders) {
     // Get or create user (auto-onboarding)
     const user = await getOrCreateUser(env.DB, phone);
     
-    // Parse user intent using LLM
-    const intent = await parseUserIntent(text, env.DEEPSEEK_API_KEY);
-    console.log('Parsed intent:', intent);
+    // Update last active time
+    await updateUserLastActive(env.DB, phone);
     
-    // Handle based on intent
-    const response = await handleIntent(intent, user, text, env);
+    // Process message and generate response
+    const response = await processMessage(text, user, env);
     
     // Send response back to user
     if (response) {
@@ -48,7 +48,8 @@ export async function handleWebhook(request, env, corsHeaders) {
     
     return jsonResponse({ 
       status: 'success',
-      intent: intent.type 
+      user: user.phone,
+      isNewUser: user.isNew
     }, 200, corsHeaders);
     
   } catch (error) {
@@ -61,111 +62,203 @@ export async function handleWebhook(request, env, corsHeaders) {
 }
 
 /**
- * Extract message data from SaleSmartly payload
+ * Process user message and generate response
  */
-function extractMessageData(data) {
-  // SaleSmartly webhook format may vary, adjust as needed
-  try {
-    return {
-      phone: data.from || data.phone || data.sender,
-      text: data.text || data.message || data.content,
-      timestamp: data.timestamp || new Date().toISOString(),
-      messageId: data.message_id || data.id
-    };
-  } catch (error) {
-    console.error('Failed to extract message data:', error);
-    return null;
+async function processMessage(text, user, env) {
+  const lowerText = text.toLowerCase();
+  
+  // Handle greetings for new users
+  if (user.isNew || isGreeting(text)) {
+    return getGreetingResponse(user);
   }
-}
-
-/**
- * Handle different user intents
- */
-async function handleIntent(intent, user, originalText, env) {
-  switch (intent.type) {
-    case 'create_reminder':
-      return await handleCreateReminder(intent, user, env);
-      
-    case 'query_reminders':
-      return await handleQueryReminders(user, intent, env);
-      
-    case 'cancel_reminder':
-      return await handleCancelReminder(intent, user, env);
-      
-    case 'greeting':
-      return getGreetingResponse(user);
-      
-    case 'help':
-      return getHelpResponse();
-      
-    default:
-      return getDefaultResponse();
+  
+  // Handle help requests
+  if (isHelpRequest(text)) {
+    return getHelpResponse();
   }
+  
+  // Handle list requests
+  if (isListRequest(text)) {
+    return await handleListReminders(user, env);
+  }
+  
+  // Handle cancel requests
+  if (isCancelRequest(text)) {
+    return await handleCancelReminder(text, user, env);
+  }
+  
+  // Try to create a reminder
+  return await handleCreateReminder(text, user, env);
 }
 
 /**
  * Handle create reminder intent
  */
-async function handleCreateReminder(intent, user, env) {
-  const { task, datetime, reminderOffset = 15 } = intent.data;
-  
-  // Calculate reminder time (default: 15 minutes before)
-  const eventTime = new Date(datetime);
-  const reminderTime = new Date(eventTime.getTime() - reminderOffset * 60000);
-  
-  // Save to database
-  await createReminder(env.DB, {
-    userPhone: user.phone,
-    taskContent: task,
-    reminderTime: reminderTime.toISOString(),
-    originalTime: eventTime.toISOString(),
-    status: 'pending'
-  });
-  
-  // Format response
-  const timeStr = formatTime(eventTime);
-  const reminderStr = formatTime(reminderTime);
-  
-  return `✅ 已為你設置提醒！
+async function handleCreateReminder(text, user, env) {
+  try {
+    // Try to use LLM for parsing
+    let intent = null;
+    if (env.DEEPSEEK_API_KEY) {
+      intent = await parseUserIntent(text, env.DEEPSEEK_API_KEY);
+    }
+    
+    let eventTime;
+    let taskContent;
+    let reminderOffset = user.default_reminder_minutes || 15;
+    
+    if (intent && intent.type === 'create_reminder' && intent.data) {
+      // Use LLM parsed data
+      eventTime = new Date(intent.data.datetime);
+      taskContent = intent.data.task;
+      if (intent.data.reminderOffset) {
+        reminderOffset = intent.data.reminderOffset;
+      }
+    } else {
+      // Fallback to rule-based parsing
+      const timeParse = parseTimeExpression(text);
+      eventTime = timeParse.date;
+      taskContent = extractTaskContent(text);
+    }
+    
+    // Validate the time is in the future
+    const now = new Date();
+    if (eventTime < now) {
+      return `⚠️ 提醒時間已過去，請檢查時間是否正確。\n\n例如："明天下午3點有組會"`;
+    }
+    
+    // Calculate reminder time
+    const reminderTime = calculateReminderTime(eventTime, reminderOffset);
+    
+    // Save to database
+    await createReminder(env.DB, {
+      userPhone: user.phone,
+      taskContent: taskContent,
+      reminderTime: reminderTime.toISOString(),
+      originalTime: eventTime.toISOString(),
+      status: 'pending'
+    });
+    
+    // Format response
+    const timeStr = formatDateTime(eventTime);
+    const reminderStr = formatDateTime(reminderTime);
+    
+    return `✅ 已為你設置提醒！
 
-📋 ${task}
+📋 ${taskContent}
 ⏰ 時間：${timeStr}
 🔔 提醒：${reminderStr}
 
 我會準時通知你 👍`;
+    
+  } catch (error) {
+    console.error('Create reminder error:', error);
+    return `抱歉，我無法理解你的意思 😅
+
+試試說：
+• "明天下午3點有組會"
+• "後天中午和朋友吃飯"
+• "週五晚上8點交作業"`;
+  }
 }
 
 /**
- * Handle query reminders intent
+ * Handle list reminders request
  */
-async function handleQueryReminders(user, intent, env) {
-  const { period = 'today' } = intent.data || {};
-  
-  const reminders = await getUserReminders(env.DB, user.phone, period);
-  
-  if (reminders.length === 0) {
-    return `📭 ${period === 'today' ? '今天' : '這段時間'}沒有安排！
+async function handleListReminders(user, env) {
+  try {
+    const reminders = await getUserReminders(env.DB, user.phone, 'today');
+    
+    if (reminders.length === 0) {
+      return `📭 今天沒有安排！
 
 可以對我說 "明天下午3點有組會" 來創建提醒 😊`;
+    }
+    
+    let response = `📅 今天的安排：\n\n`;
+    reminders.forEach((reminder, index) => {
+      const time = formatDateTime(reminder.original_time);
+      const status = reminder.status === 'sent' ? '✅' : '⏳';
+      response += `${status} ${time} - ${reminder.task_content}\n`;
+    });
+    
+    response += `\n加油！💪`;
+    return response;
+    
+  } catch (error) {
+    console.error('List reminders error:', error);
+    return `抱歉，查詢時出現問題 😅 請稍後再試`;
   }
-  
-  let response = `📅 ${period === 'today' ? '今天' : '即將到來'}的安排：\n\n`;
-  reminders.forEach((reminder, index) => {
-    const time = formatTime(new Date(reminder.original_time));
-    response += `${index + 1}. ${time} - ${reminder.task_content}\n`;
-  });
-  
-  return response;
 }
 
 /**
- * Handle cancel reminder intent
+ * Handle cancel reminder request
  */
-async function handleCancelReminder(intent, user, env) {
-  // TODO: Implement cancellation logic
-  return `✅ 已取消提醒。
+async function handleCancelReminder(text, user, env) {
+  try {
+    // Extract keyword to identify which reminder to cancel
+    const keyword = text.replace(/取消|刪除|不要提醒|移除|cancel|delete/gi, '').trim();
+    
+    if (!keyword) {
+      return `請告訴我要取消哪個提醒，例如：\n"取消組會提醒"`;
+    }
+    
+    // Get user's pending reminders
+    const reminders = await getUserReminders(env.DB, user.phone, 'all');
+    
+    // Find matching reminder
+    const matching = reminders.filter(r => 
+      r.task_content.toLowerCase().includes(keyword.toLowerCase())
+    );
+    
+    if (matching.length === 0) {
+      return `找不到包含「${keyword}」的提醒 😅\n\n可以說「查看日程」看看有哪些提醒`;
+    }
+    
+    if (matching.length === 1) {
+      // Cancel the matching reminder
+      await cancelReminder(env.DB, matching[0].id, user.phone);
+      return `✅ 已取消提醒：${matching[0].task_content}`;
+    }
+    
+    // Multiple matches
+    let response = `找到多個匹配，請告訴我具體是哪個：\n\n`;
+    matching.forEach((r, i) => {
+      response += `${i + 1}. ${r.task_content} (${formatDateTime(r.original_time)})\n`;
+    });
+    return response;
+    
+  } catch (error) {
+    console.error('Cancel reminder error:', error);
+    return `抱歉，取消時出現問題 😅 請稍後再試`;
+  }
+}
 
-需要幫你安排其他事情嗎？`;
+/**
+ * Extract message data from SaleSmartly payload
+ */
+function extractMessageData(data) {
+  try {
+    // Handle different SaleSmartly webhook formats
+    const phone = data.from || data.phone || data.sender || data.wa_id;
+    const text = data.text || data.message || data.body || data.content;
+    const timestamp = data.timestamp || data.created_at || new Date().toISOString();
+    const messageId = data.message_id || data.id || data.wamid;
+    
+    if (!phone || !text) {
+      console.log('Missing phone or text in payload:', data);
+      return null;
+    }
+    
+    return {
+      phone: phone.toString(),
+      text: text.toString(),
+      timestamp,
+      messageId
+    };
+  } catch (error) {
+    console.error('Failed to extract message data:', error);
+    return null;
+  }
 }
 
 /**
@@ -189,7 +282,13 @@ function getGreetingResponse(user) {
 你想先試哪個？`;
   }
   
-  return `🦞 嗨 ${user.name || ''}！有什麼我可以幫忙的嗎？`;
+  const greetings = [
+    `🦞 嗨 ${user.name || ''}！有什麼我可以幫忙的嗎？`,
+    `🦞 你好！今天有什麼安排？`,
+    `🦞 嗨！需要我記住什麼事情嗎？`
+  ];
+  
+  return greetings[Math.floor(Math.random() * greetings.length)];
 }
 
 /**
@@ -205,32 +304,6 @@ function getHelpResponse() {
 • "記得周五交作業" - 記錄待辦
 
 其他問題隨時問我！`;
-}
-
-/**
- * Get default response for unknown intents
- */
-function getDefaultResponse() {
-  return `🤔 我好像沒完全理解你的意思。
-
-試試說：
-• "明天下午3點有組會"
-• "我今天有什麼安排"
-
-或者輸入 "幫助" 查看我能做什麼 😊`;
-}
-
-/**
- * Format time for display
- */
-function formatTime(date) {
-  return date.toLocaleString('zh-HK', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
 }
 
 function jsonResponse(data, status, headers) {
