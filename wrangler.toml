@@ -1,0 +1,33 @@
+# Watson Claw - Cloudflare Workers Configuration
+# Production Environment
+
+name = "watson-claw"
+main = "src/index.js"
+compatibility_date = "2026-03-28"
+
+# 環境變量（非敏感）
+[vars]
+ENVIRONMENT = "production"
+TIMEZONE = "Asia/Hong_Kong"
+DEFAULT_LANGUAGE = "zh-HK"
+DEFAULT_REMINDER_MINUTES = "15"
+
+# D1 數據庫綁定
+[[d1_databases]]
+binding = "DB"
+database_name = "watson-claw-db"
+database_id = "your-production-db-id"
+
+# KV 命名空間（用於緩存和配置）
+[[kv_namespaces]]
+binding = "CACHE"
+id = "your-kv-namespace-id"
+
+# Cron 觸發器（每小時檢查提醒）
+[triggers]
+crons = ["0 * * * *"]
+
+# 路由（如果綁定自定義域名）
+# [[routes]]
+# pattern = "api.watson-claw.com"
+# custom_domain = true

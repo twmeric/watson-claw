@@ -1,0 +1,45 @@
+{
+  "name": "watson-claw",
+  "version": "1.0.0",
+  "description": "WhatsApp AI assistant for university students - Powered by Cloudflare Workers",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:staging": "wrangler dev --config wrangler.staging.toml",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --config wrangler.staging.toml",
+    "lint": "eslint src/ --ext .js",
+    "lint:fix": "eslint src/ --ext .js --fix",
+    "test": "jest --passWithNoTests",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "db:migrate": "wrangler d1 migrations apply watson-claw-db",
+    "db:migrate:staging": "wrangler d1 migrations apply watson-claw-staging-db --config wrangler.staging.toml",
+    "db:create": "wrangler d1 create watson-claw-db",
+    "db:create-migration": "wrangler d1 migrations create watson-claw-db",
+    "setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-dev.ps1",
+    "format": "prettier --write \"src/**/*.js\""
+  },
+  "keywords": [
+    "whatsapp",
+    "ai",
+    "assistant",
+    "cloudflare-workers",
+    "university"
+  ],
+  "author": "Jim's Bond",
+  "license": "MIT",
+  "dependencies": {
+    "chrono-node": "^2.7.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240320.1",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.2.5",
+    "wrangler": "^3.34.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

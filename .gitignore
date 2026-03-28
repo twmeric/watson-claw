@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.dev.vars
+.dev.vars.local
+
+# Wrangler
+.wrangler/
+wrangler.toml.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+*.log
+
+# Build
+dist/
+build/
+.output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Secrets (never commit!)
+WATSON_CLAW_SECRETS.md
+*.key
+*.pem

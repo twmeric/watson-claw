@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watson Claw — 你的大學生活指揮官</title>
+    <meta name="description" content="剛入大學？讓 Watson 幫你管理課表、社團、聚會。只需在 WhatsApp 說出來，自動幫你安排妥當。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@200;300;400;500&display=swap" rel="stylesheet">
+    <style>
+      /* 基礎重置 */
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      :root {
+        --victorian-gold: #c9a962;
+        --deep-forest: #0f1410;
+        --forest-green: #1a2520;
+        --whatsapp-green: #25d366;
+        --cream: #f5f1e8;
+      }
+      
+      html {
+        scroll-behavior: smooth;
+      }
+      
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 300;
+        background: var(--deep-forest);
+        color: #fff;
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+      
+      /* Typography */
+      .font-display {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 400;
+        letter-spacing: 0.03em;
+      }
+      
+      .font-accent {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 400;
+        font-style: italic;
+        letter-spacing: 0.02em;
+      }
+      
+      .font-seductive {
+        font-family: 'Cormorant Garamond', serif;
+        font-weight: 300;
+        letter-spacing: 0.05em;
+        text-shadow: 0 0 40px rgba(201, 169, 98, 0.2);
+      }
+      
+      /* 維多利亞裝飾 */
+      .victorian-corner {
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        opacity: 0.15;
+        pointer-events: none;
+      }
+      
+      .victorian-corner-tl {
+        top: 0;
+        left: 0;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%23c9a962' stroke-width='1' d='M0 40 Q0 0 40 0 M10 30 Q10 10 30 10 M0 20 L20 20 M20 0 L20 20'/%3E%3Ccircle cx='20' cy='20' r='2' fill='%23c9a962'/%3E%3C/svg%3E") no-repeat;
+        background-size: contain;
+      }
+      
+      .victorian-corner-tr {
+        top: 0;
+        right: 0;
+        transform: rotate(90deg);
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%23c9a962' stroke-width='1' d='M0 40 Q0 0 40 0 M10 30 Q10 10 30 10 M0 20 L20 20 M20 0 L20 20'/%3E%3Ccircle cx='20' cy='20' r='2' fill='%23c9a962'/%3E%3C/svg%3E") no-repeat;
+        background-size: contain;
+      }
+      
+      .victorian-corner-bl {
+        bottom: 0;
+        left: 0;
+        transform: rotate(-90deg);
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%23c9a962' stroke-width='1' d='M0 40 Q0 0 40 0 M10 30 Q10 10 30 10 M0 20 L20 20 M20 0 L20 20'/%3E%3Ccircle cx='20' cy='20' r='2' fill='%23c9a962'/%3E%3C/svg%3E") no-repeat;
+        background-size: contain;
+      }
+      
+      .victorian-corner-br {
+        bottom: 0;
+        right: 0;
+        transform: rotate(180deg);
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='none' stroke='%23c9a962' stroke-width='1' d='M0 40 Q0 0 40 0 M10 30 Q10 10 30 10 M0 20 L20 20 M20 0 L20 20'/%3E%3Ccircle cx='20' cy='20' r='2' fill='%23c9a962'/%3E%3C/svg%3E") no-repeat;
+        background-size: contain;
+      }
+      
+      /* 按鈕樣式 */
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        background: var(--whatsapp-green);
+        color: #fff;
+        font-weight: 400;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        border: none;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+      
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3);
+      }
+      
+      .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        background: transparent;
+        color: var(--victorian-gold);
+        font-weight: 400;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        border: 1px solid var(--victorian-gold);
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+      
+      .btn-secondary:hover {
+        background: rgba(201, 169, 98, 0.1);
+      }
+      
+      /* 分隔線 */
+      .divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(201, 169, 98, 0.4), transparent);
+        margin: 2rem 0;
+      }
+      
+      /* 對話氣泡 */
+      .chat-bubble {
+        max-width: 80%;
+        padding: 1rem 1.25rem;
+        border-radius: 18px;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        position: relative;
+        animation: fadeInUp 0.5s ease forwards;
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      
+      .chat-bubble-user {
+        background: var(--whatsapp-green);
+        color: #fff;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+      }
+      
+      .chat-bubble-watson {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(201, 169, 98, 0.2);
+        color: #fff;
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+      }
+      
+      @keyframes fadeInUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      /* 響應式 */
+      @media (max-width: 768px) {
+        .font-seductive {
+          font-size: 3rem !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav style="position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 1.5rem 2rem; background: linear-gradient(to bottom, rgba(15, 20, 16, 0.95), transparent);">
+      <div style="max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.3); display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#25d366" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+          </div>
+          <span class="font-display" style="font-size: 1.5rem; color: #fff;">Watson Claw</span>
+        </div>
+        <a href="#start" class="btn-primary" style="padding: 0.75rem 1.5rem; font-size: 0.75rem;">立即試用</a>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section style="position: relative; min-height: 100vh; display: flex; align-items: center; padding: 6rem 2rem 4rem;">
+      <!-- Background Effects -->
+      <div style="position: absolute; inset: 0; overflow: hidden; pointer-events: none;">
+        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(10, 15, 12, 0.95), rgba(15, 26, 20, 0.9), rgba(13, 20, 16, 0.95));"></div>
+        <div style="position: absolute; top: -50%; right: -20%; width: 800px; height: 800px; background: radial-gradient(circle, rgba(201, 169, 98, 0.08) 0%, transparent 70%); filter: blur(60px);"></div>
+        <div style="position: absolute; bottom: -30%; left: -10%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(37, 211, 102, 0.06) 0%, transparent 70%); filter: blur(80px);"></div>
+      </div>
+      
+      <!-- Victorian Corners -->
+      <div class="victorian-corner victorian-corner-tl"></div>
+      <div class="victorian-corner victorian-corner-tr"></div>
+      <div class="victorian-corner victorian-corner-bl"></div>
+      <div class="victorian-corner victorian-corner-br"></div>
+      
+      <div style="position: relative; z-index: 10; max-width: 1400px; margin: 0 auto; width: 100%;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+          <!-- Left Content -->
+          <div style="space-y: 2rem;">
+            <div style="margin-bottom: 1.5rem;">
+              <span style="display: inline-block; padding: 0.5rem 1rem; background: rgba(201, 169, 98, 0.1); border: 1px solid rgba(201, 169, 98, 0.3); color: var(--victorian-gold); font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; border-radius: 2px;">
+                專為大學新鮮人打造
+              </span>
+            </div>
+            
+            <h1 class="font-seductive" style="font-size: 5rem; line-height: 1; color: #fff; margin-bottom: 1.5rem;">
+              Watson<br/>
+              <span style="color: var(--victorian-gold);">Claw</span>
+            </h1>
+            
+            <p class="font-accent" style="font-size: 1.75rem; color: rgba(201, 169, 98, 0.8); margin-bottom: 2rem;">
+              你的大學生活指揮官
+            </p>
+            
+            <p style="font-size: 1.125rem; color: rgba(255, 255, 255, 0.6); max-width: 480px; margin-bottom: 2.5rem; line-height: 1.8;">
+              剛入大學？課表、社團、聚會讓你手忙腳亂？<br/>
+              只需在 WhatsApp 說出來，Watson 自動幫你安排妥當。
+            </p>
+            
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <a href="#start" class="btn-primary">
+                免費開始使用
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </a>
+              <a href="#demo" class="btn-secondary">看看怎麼用</a>
+            </div>
+            
+            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(201, 169, 98, 0.2);">
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="opacity: 0.7;">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#f48120" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span style="font-size: 0.8125rem; color: rgba(255, 255, 255, 0.5); letter-spacing: 0.08em;">POWERED BY CLOUDFLARE</span>
+              </div>
+              <p style="font-size: 0.9375rem; color: rgba(201, 169, 98, 0.8);">
+                「無論你在哪裡，Watson 都在你身邊」
+              </p>
+            </div>
+          </div>
+          
+          <!-- Right - Chat Demo -->
+          <div style="position: relative;">
+            <!-- Phone Frame -->
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(201, 169, 98, 0.2); border-radius: 24px; padding: 1.5rem; max-width: 380px; margin: 0 auto; backdrop-filter: blur(10px);">
+              <!-- Chat Header -->
+              <div style="display: flex; align-items: center; gap: 0.75rem; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(37, 211, 102, 0.2); display: flex; align-items: center; justify-content: center;">
+                  <span style="font-size: 1.25rem;">🦞</span>
+                </div>
+                <div>
+                  <div style="font-weight: 500; color: #fff;">Watson Claw</div>
+                  <div style="font-size: 0.75rem; color: var(--whatsapp-green);">online</div>
+                </div>
+              </div>
+              
+              <!-- Chat Messages -->
+              <div style="display: flex; flex-direction: column; gap: 0.75rem; min-height: 320px;">
+                <div class="chat-bubble chat-bubble-user" style="animation-delay: 0.2s;">
+                  明天下午3點有組會，幫我記得準備簡報
+                </div>
+                <div class="chat-bubble chat-bubble-watson" style="animation-delay: 0.8s;">
+                  ✅ 已為您創建明天 15:00 的提醒<br/><br/>
+                  📋 待辦：準備組會簡報<br/>
+                  ⏰ 提醒時間：明天 14:00
+                </div>
+                <div class="chat-bubble chat-bubble-user" style="animation-delay: 1.4s;">
+                  週五晚上約了室友吃火鍋，記得訂位
+                </div>
+                <div class="chat-bubble chat-bubble-watson" style="animation-delay: 2s;">
+                  ✅ 已記錄週五晚餐聚會<br/><br/>
+                  🍲 需要我幫您搜尋附近的火鍋店嗎？
+                </div>
+              </div>
+            </div>
+            
+            <!-- Floating Badge -->
+            <div style="position: absolute; -top-4 -right-4; padding: 0.75rem 1rem; background: var(--victorian-gold); color: var(--deep-forest); font-size: 0.75rem; font-weight: 500; border-radius: 4px; animation: float 3s ease-in-out infinite;">
+              🤖 AI 待命
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section id="demo" style="padding: 6rem 2rem; position: relative;">
+      <div style="max-width: 1200px; margin: 0 auto;">
+        <!-- Section Header -->
+        <div style="text-align: center; margin-bottom: 4rem;">
+          <span style="display: inline-block; padding: 0.5rem 1rem; background: rgba(37, 211, 102, 0.1); border: 1px solid rgba(37, 211, 102, 0.3); color: var(--whatsapp-green); font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; border-radius: 2px; margin-bottom: 1.5rem;">
+            大學生活場景
+          </span>
+          <h2 class="font-display" style="font-size: 3rem; color: #fff; margin-bottom: 1rem;">
+            一句話，搞定所有瑣事
+          </h2>
+          <p style="font-size: 1.125rem; color: rgba(255, 255, 255, 0.5); max-width: 600px; margin: 0 auto;">
+            不用切換 App，不用記流程，就像跟朋友說話一樣簡單
+          </p>
+        </div>
+        
+        <!-- Use Cases Grid -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;">
+          <!-- Case 1 -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(201, 169, 98, 0.15); border-radius: 12px; padding: 2rem; transition: all 0.3s ease;" onmouseover="this.style.borderColor='rgba(201, 169, 98, 0.4)'; this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='rgba(201, 169, 98, 0.15)'; this.style.transform='translateY(0)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">📚</div>
+            <h3 class="font-display" style="font-size: 1.5rem; color: var(--victorian-gold); margin-bottom: 0.75rem;">課業管理</h3>
+            <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9375rem; margin-bottom: 1.5rem;">
+              自動記錄作業截止日期、考試時間，到期自動提醒
+            </p>
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.8125rem; color: rgba(255, 255, 255, 0.7);">
+              "下週三交線性代數作業，提前一天提醒我"
+            </div>
+          </div>
+          
+          <!-- Case 2 -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(201, 169, 98, 0.15); border-radius: 12px; padding: 2rem; transition: all 0.3s ease;" onmouseover="this.style.borderColor='rgba(201, 169, 98, 0.4)'; this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='rgba(201, 169, 98, 0.15)'; this.style.transform='translateY(0)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎉</div>
+            <h3 class="font-display" style="font-size: 1.5rem; color: var(--victorian-gold); margin-bottom: 0.75rem;">社團活動</h3>
+            <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9375rem; margin-bottom: 1.5rem;">
+              協調社團會議時間，自動發送通知給所有成員
+            </p>
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.8125rem; color: rgba(255, 255, 255, 0.7);">
+              "週末社團聚會，幫我問問大家什麼時候有空"
+            </div>
+          </div>
+          
+          <!-- Case 3 -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(201, 169, 98, 0.15); border-radius: 12px; padding: 2rem; transition: all 0.3s ease;" onmouseover="this.style.borderColor='rgba(201, 169, 98, 0.4)'; this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='rgba(201, 169, 98, 0.15)'; this.style.transform='translateY(0)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">👥</div>
+            <h3 class="font-display" style="font-size: 1.5rem; color: var(--victorian-gold); margin-bottom: 0.75rem;">社交聚會</h3>
+            <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9375rem; margin-bottom: 1.5rem;">
+              幫你記住朋友的生日、約會時間，從不失約
+            </p>
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.8125rem; color: rgba(255, 255, 255, 0.7);">
+              "小明生日是下個月5號，記得提醒我準備禮物"
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section style="padding: 6rem 2rem; background: rgba(0, 0, 0, 0.2);">
+      <div style="max-width: 1000px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 4rem;">
+          <h2 class="font-display" style="font-size: 3rem; color: #fff; margin-bottom: 1rem;">
+            三步開始使用
+          </h2>
+        </div>
+        
+        <div style="display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;">
+          <!-- Step 1 -->
+          <div style="text-align: center; max-width: 280px;">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(37, 211, 102, 0.1); border: 2px solid rgba(37, 211, 102, 0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+              <span style="font-size: 2rem; color: var(--whatsapp-green);">1</span>
+            </div>
+            <h3 style="font-size: 1.25rem; color: #fff; margin-bottom: 0.75rem;">添加 Watson 為聯繫人</h3>
+            <p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9375rem;">
+              掃描 QR Code 或點擊連結，將 Watson 加入你的 WhatsApp
+            </p>
+          </div>
+          
+          <!-- Arrow -->
+          <div style="display: flex; align-items: center; color: var(--victorian-gold); font-size: 1.5rem;">→</div>
+          
+          <!-- Step 2 -->
+          <div style="text-align: center; max-width: 280px;">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(37, 211, 102, 0.1); border: 2px solid rgba(37, 211, 102, 0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+              <span style="font-size: 2rem; color: var(--whatsapp-green);">2</span>
+            </div>
+            <h3 style="font-size: 1.25rem; color: #fff; margin-bottom: 0.75rem;">連接你的行事曆</h3>
+            <p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9375rem;">
+              一鍵授權 Google Calendar，讓 Watson 幫你管理行程
+            </p>
+          </div>
+          
+          <!-- Arrow -->
+          <div style="display: flex; align-items: center; color: var(--victorian-gold); font-size: 1.5rem;">→</div>
+          
+          <!-- Step 3 -->
+          <div style="text-align: center; max-width: 280px;">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(37, 211, 102, 0.1); border: 2px solid rgba(37, 211, 102, 0.3); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+              <span style="font-size: 2rem; color: var(--whatsapp-green);">3</span>
+            </div>
+            <h3 style="font-size: 1.25rem; color: #fff; margin-bottom: 0.75rem;">開始說話下指令</h3>
+            <p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9375rem;">
+              就像跟朋友聊天一樣，告訴 Watson 你需要什麼
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="start" style="padding: 6rem 2rem; position: relative;">
+      <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+        <h2 class="font-seductive" style="font-size: 4rem; color: #fff; margin-bottom: 1.5rem;">
+          準備好解放你的大腦了嗎？
+        </h2>
+        <p style="font-size: 1.25rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 2.5rem;">
+          現在註冊，免費獲得 30 天進階功能<br/>
+          <span style="font-size: 0.9375rem; color: rgba(255, 255, 255, 0.4);">之後每月只需一杯奶茶錢</span>
+        </p>
+        
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem;">
+          <a href="https://wa.me/85261571437?text=我想試用Watson%20Claw" class="btn-primary" style="font-size: 1rem; padding: 1.25rem 2.5rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+            </svg>
+            在 WhatsApp 開始使用
+          </a>
+        </div>
+        
+        <div style="padding: 2rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(201, 169, 98, 0.2); border-radius: 12px;">
+          <p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9375rem; margin-bottom: 1rem;">
+            💡 小提示：你也可以直接掃描下方 QR Code
+          </p>
+          <div style="width: 160px; height: 160px; background: #fff; margin: 0 auto; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #333;">
+            <span style="font-size: 0.75rem;">[QR Code]</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="padding: 3rem 2rem; border-top: 1px solid rgba(201, 169, 98, 0.1);">
+      <div style="max-width: 1200px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.3); display: flex; align-items: center; justify-content: center;">
+              <span style="font-size: 1rem;">🦞</span>
+            </div>
+            <span class="font-display" style="font-size: 1.25rem; color: #fff;">Watson Claw</span>
+          </div>
+          
+          <div style="display: flex; gap: 2rem;">
+            <a href="#" style="color: rgba(255, 255, 255, 0.5); text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='var(--victorian-gold)'" onmouseout="this.style.color='rgba(255, 255, 255, 0.5)'">隱私政策</a>
+            <a href="#" style="color: rgba(255, 255, 255, 0.5); text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='var(--victorian-gold)'" onmouseout="this.style.color='rgba(255, 255, 255, 0.5)'">使用條款</a>
+            <a href="mailto:info@bigbangmarketing.hk" style="color: rgba(255, 255, 255, 0.5); text-decoration: none; font-size: 0.875rem; transition: color 0.3s;" onmouseover="this.style.color='var(--victorian-gold)'" onmouseout="this.style.color='rgba(255, 255, 255, 0.5)'">聯繫我們</a>
+          </div>
+        </div>
+        
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.05); text-align: center;">
+          <p style="color: rgba(255, 255, 255, 0.3); font-size: 0.875rem;">
+            © 2024 Watson Claw. Crafted with 🦞 in Hong Kong
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <style>
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+    </style>
+  </body>
+</html>
