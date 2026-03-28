@@ -10,14 +10,14 @@ TIMEZONE = "Asia/Hong_Kong"
 DEFAULT_LANGUAGE = "zh-HK"
 DEFAULT_REMINDER_MINUTES = "15"
 
-[[d1_databases]]
-binding = "DB"
-database_name = "watson-claw-staging-db"
-database_id = "your-staging-db-id"
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "watson-claw-staging-db"
+# database_id = "your-staging-db-id"
 
-[[kv_namespaces]]
-binding = "CACHE"
-id = "your-staging-kv-id"
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-staging-kv-id"
 
 [triggers]
 crons = ["*/5 * * * *"]  # Staging 每5分鐘檢查，方便測試

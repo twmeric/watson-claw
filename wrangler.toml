@@ -13,15 +13,15 @@ DEFAULT_LANGUAGE = "zh-HK"
 DEFAULT_REMINDER_MINUTES = "15"
 
 # D1 數據庫綁定
-[[d1_databases]]
-binding = "DB"
-database_name = "watson-claw-db"
-database_id = "your-production-db-id"
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "watson-claw-db"
+# database_id = "your-production-db-id"
 
 # KV 命名空間（用於緩存和配置）
-[[kv_namespaces]]
-binding = "CACHE"
-id = "your-kv-namespace-id"
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
 
 # Cron 觸發器（每小時檢查提醒）
 [triggers]
