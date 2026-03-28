@@ -15,7 +15,10 @@ import { parseTimeExpression, extractTaskContent, formatDateTime, calculateRemin
 export async function handleWebhook(request, env, corsHeaders) {
   // Validate security code
   const securityCode = request.headers.get('X-Security-Code');
-  if (!validateSecurityCode(securityCode, env.SALESMARTLY_SECURITY_CODE)) {
+  const expectedCode = env.SALESMARTLY_SECURITY_PROD || env.SALESMARTLY_SECURITY_CODE || env.SALESMARTLY_SECURITY_STAGING;
+  
+  // Validate security code
+  if (!securityCode || securityCode !== expectedCode) {
     console.warn('Invalid security code received');
     return jsonResponse({ error: 'Unauthorized' }, 401, corsHeaders);
   }
