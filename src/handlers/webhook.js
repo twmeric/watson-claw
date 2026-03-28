@@ -35,7 +35,7 @@ export async function handleWebhook(request, env, corsHeaders) {
     const user = await getOrCreateUser(env.DB, phone);
     
     // Parse user intent using LLM
-    const intent = await parseUserIntent(text, env.OPENROUTER_API_KEY);
+    const intent = await parseUserIntent(text, env.DEEPSEEK_API_KEY);
     console.log('Parsed intent:', intent);
     
     // Handle based on intent
