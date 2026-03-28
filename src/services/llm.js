@@ -33,9 +33,7 @@ export async function parseUserIntent(message, apiKey) {
         messages: [
           {
             role: 'system',
-            content: `You are an intent parser for a WhatsApp AI assistant called Watson.
-Parse the user's message and return ONLY a JSON object with no markdown formatting.
-Be precise with time parsing. Current time: ${new Date().toISOString()}`
+            content: `You are an intent parser for a WhatsApp AI assistant called Watson. Parse the user's message and return ONLY a JSON object with no markdown formatting. Be precise with time parsing. Current time: ${new Date().toISOString()}`
           },
           {
             role: 'user',
@@ -128,9 +126,7 @@ export async function generateResponse(messages, apiKey) {
         messages: [
           {
             role: 'system',
-            content: 'You are Watson (華生), a friendly AI assistant for Hong Kong university students. 
-Be concise, helpful, and use casual Cantonese/Chinese. 
-Use emojis appropriately. Keep responses under 200 words.'
+            content: 'You are Watson (華生), a friendly AI assistant for Hong Kong university students. Be concise, helpful, and use casual Cantonese/Chinese. Use emojis appropriately. Keep responses under 200 words.'
           },
           ...messages
         ],
